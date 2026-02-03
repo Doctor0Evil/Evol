@@ -25,40 +25,35 @@ neurorights_clauses
   explainable_use_required # Every activation must carry a plain-language explanation
   no_hidden_coercion       # No patterns that induce behavioral change without explicit tagging
 
-# 7D corridor predicates (conceptual; enforced by Rust guard predicates)
-
-# Spatial envelope (TGC-based gaze localization)
 predicate spatial_error_bound_cm
-  # |reconstructed_gaze_point - true_target| <= 0.20 cm
   max_spatial_error_cm <= 0.20
   confidence_level      >= 0.95
 
 predicate energy_envelope
-  # Instantaneous and session energy limits for XR gaze coupling
   per_event_energy_j      <= 0.05
   per_session_energy_j    <= 5.0
   daily_energy_j          <= 25.0
 
 predicate sbio_and_thermal
-  sbio_load_index         <= 0.30      # 0–1 normalized structural-bio load
-  local_thermal_delta_c   <= 0.8       # Max increase at periorbital/visual cortex
+  sbio_load_index         <= 0.30
+  local_thermal_delta_c   <= 0.8
   global_thermal_delta_c  <= 0.4
 
 predicate duty_cycle_and_timing
-  max_duty_fraction_session <= 0.35    # Fraction of XR session time with active gaze-corridor modulation
-  min_inter_event_ms        >= 25      # No faster than 40 Hz effective modulation events
-  max_continuous_burst_ms   <= 500     # Single burst limit
+  max_duty_fraction_session      <= 0.35
+  min_inter_event_ms             >= 25
+  max_continuous_burst_ms        <= 500
   min_cooldown_between_bursts_ms >= 250
 
 predicate hrv_and_eeg_corridor
-  hrv_drop_allowed_ratio    >= 0.85    # HRV should not drop below 85% of session baseline
-  eeg_beta_gamma_ceiling    <= 0.80    # 0–1 normalized load
-  overload_flag_probability <= 0.05    # Probability of overload markers within corridor use
+  hrv_drop_allowed_ratio    >= 0.85
+  eeg_beta_gamma_ceiling    <= 0.80
+  overload_flag_probability <= 0.05
 
 predicate roh_target
-  roh_estimate_window       <= 0.30    # Global RoH ceiling
-  roh_target_preferred      <= 0.10    # Target regime for tuning
-  roh_initial_claim         ≈ 0.08     # Based on conservative calibration datasets
+  roh_estimate_window  <= 0.30
+  roh_target_preferred <= 0.10
+  roh_initial_claim    ~= 0.08
 
 aln_particles
   particle ALN.XR.Gaze.CorridorV1
