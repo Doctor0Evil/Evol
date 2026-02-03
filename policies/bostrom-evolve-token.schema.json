@@ -1,0 +1,24 @@
+{
+  "type": "object",
+  "properties": {
+    "id": { "type": "string" },
+    "subjectid": { "type": "string" },
+    "kind": { "enum": ["SMART", "EVOLVE"] },
+    "scope": { "type": "array", "items": { "type": "string" } },
+    "roh_band": { "enum": ["strict", "research"] },
+    "maxeffectsize": { "type": "number" },
+    "validfrom": { "type": "string", "format": "date-time" },
+    "validuntil": { "type": "string", "format": "date-time" },
+    "physioguard": {
+      "type": "object",
+      "properties": {
+        "min_hrv_sdnn_ms": { "type": "number" },
+        "max_fatigueindex": { "type": "number" },
+        "max_pain_vas": { "type": "number" }
+      },
+      "required": ["min_hrv_sdnn_ms", "max_fatigueindex", "max_pain_vas"]
+    }
+  },
+  "required": ["id", "subjectid", "kind", "scope", "roh_band", "maxeffectsize",
+               "validfrom", "validuntil"]
+}
