@@ -1,0 +1,87 @@
+version 2026.02.03
+hextag 0xC0RR-XR-GAZE-V1-0001
+
+corridor_id bio.corridor.xr.gaze.v1
+
+description XR gaze → visual-cortex nexus corridor with strict spatial and thermodynamic bounds in 7D (space, time, energy, Sbio, thermal, HRV, EEG).
+
+domains XR, BRAIN, NEUROMORPH
+
+evidence_hex_tags
+  a1f3c9b2  # RMR baseline and resting metabolic cost calibration
+  4be79d01  # ATP coupling efficiency for visual-cortex workloads
+  9cd4a7e8  # Thermal ceiling data for periorbital / visual cortex region
+  2f8c6b44  # Neurovascular coupling and hemodynamic response
+  7e1da2ff  # Neuromorphic energy per XR gaze interaction
+  5b93e0c3  # Pain/inflammation thresholds around ocular / cranial structures
+  d0174aac  # HRV-based autonomic load boundaries
+  6ac2f9d9  # EEG beta/gamma band load envelopes during XR tasks
+  c4e61b20  # TGC reconstruction error calibration (geometry constraints)
+  8f09d5ee  # RoH calibration dataset targeting RoH ≈ 0.08 under corridor use
+
+neurorights_clauses
+  noraweegexport           # No raw EEG/gaze export without explicit, revocable consent
+  rollback_anytime         # User may request immediate downgrade/rollback of this corridor
+  explainable_use_required # Every activation must carry a plain-language explanation
+  no_hidden_coercion       # No patterns that induce behavioral change without explicit tagging
+
+# 7D corridor predicates (conceptual; enforced by Rust guard predicates)
+
+# Spatial envelope (TGC-based gaze localization)
+predicate spatial_error_bound_cm
+  # |reconstructed_gaze_point - true_target| <= 0.20 cm
+  max_spatial_error_cm <= 0.20
+  confidence_level      >= 0.95
+
+predicate energy_envelope
+  # Instantaneous and session energy limits for XR gaze coupling
+  per_event_energy_j      <= 0.05
+  per_session_energy_j    <= 5.0
+  daily_energy_j          <= 25.0
+
+predicate sbio_and_thermal
+  sbio_load_index         <= 0.30      # 0–1 normalized structural-bio load
+  local_thermal_delta_c   <= 0.8       # Max increase at periorbital/visual cortex
+  global_thermal_delta_c  <= 0.4
+
+predicate duty_cycle_and_timing
+  max_duty_fraction_session <= 0.35    # Fraction of XR session time with active gaze-corridor modulation
+  min_inter_event_ms        >= 25      # No faster than 40 Hz effective modulation events
+  max_continuous_burst_ms   <= 500     # Single burst limit
+  min_cooldown_between_bursts_ms >= 250
+
+predicate hrv_and_eeg_corridor
+  hrv_drop_allowed_ratio    >= 0.85    # HRV should not drop below 85% of session baseline
+  eeg_beta_gamma_ceiling    <= 0.80    # 0–1 normalized load
+  overload_flag_probability <= 0.05    # Probability of overload markers within corridor use
+
+predicate roh_target
+  roh_estimate_window       <= 0.30    # Global RoH ceiling
+  roh_target_preferred      <= 0.10    # Target regime for tuning
+  roh_initial_claim         ≈ 0.08     # Based on conservative calibration datasets
+
+aln_particles
+  particle ALN.XR.Gaze.CorridorV1
+    clauses
+      spatial_error_bound_cm
+      energy_envelope
+      sbio_and_thermal
+      duty_cycle_and_timing
+      hrv_and_eeg_corridor
+      roh_target
+    neurorights_refs
+      noraweegexport
+      rollback_anytime
+      explainable_use_required
+      no_hidden_coercion
+    evidence_hex_tags_ref
+      a1f3c9b2
+      4be79d01
+      9cd4a7e8
+      2f8c6b44
+      7e1da2ff
+      5b93e0c3
+      d0174aac
+      6ac2f9d9
+      c4e61b20
+      8f09d5ee
