@@ -4,20 +4,9 @@ use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
 
-use bioscale_core::{
-    BrainSpecs,
-    HostBudget,
-    EvolutionDecision,
-    EvolutionDecisionKind,
-};
-
-use bioscale_metrics::{
-    CorridorMetricsSink,
-};
-
-use bioscale_neuro::{
-    BciHostSnapshot,
-};
+use bioscale_core::{BrainSpecs, EvolutionDecision, EvolutionDecisionKind, HostBudget};
+use bioscale_metrics::CorridorMetricsSink;
+use bioscale_neuro::BciHostSnapshot;
 
 /// Stable identifier for this corridor.
 pub const XR_GAZE_CORRIDOR_ID: &str = "bio.corridor.xr.gaze.v1";
@@ -48,7 +37,6 @@ impl Default for XrGazeEvidenceBundleV1 {
 }
 
 /// Static envelope parameters derived from the ALN corridor shard.
-/// These are compile-time-like constants; you can later convert some to const generics.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct XrGazeCorridorEnvelopeV1 {
     pub max_spatial_error_cm: f32,
@@ -93,37 +81,23 @@ impl Default for XrGazeCorridorEnvelopeV1 {
 /// Observables projected into the corridor state space for one decision step.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct XrGazeCorridorStateV1 {
-    /// Euclidean distance between reconstructed TGC gaze point and target (cm).
     pub spatial_error_cm: f32,
-    /// Energy consumed by this planned event (J).
     pub event_energy_j: f32,
-    /// Cumulative session energy (J).
     pub session_energy_j: f32,
-    /// Cumulative daily energy for this corridor (J).
     pub daily_energy_j: f32,
-    /// Structural-bio load (0–1).
     pub sbio_load_index: f32,
-    /// Local periorbital/visual cortex delta (°C).
     pub local_thermal_delta_c: f32,
-    /// Whole-head/global delta (°C).
     pub global_thermal_delta_c: f32,
-    /// Fraction of XR session with this corridor active.
     pub session_duty_fraction: f32,
-    /// Time since last event within this corridor.
     pub inter_event: Duration,
-    /// Current continuous burst length.
     pub continuous_burst: Duration,
-    /// Time since last burst ended.
     pub cooldown_since_last_burst: Duration,
-    /// HRV ratio relative to baseline (1.0 = unchanged).
     pub hrv_ratio: f32,
-    /// Normalized EEG beta/gamma load (0–1).
     pub eeg_beta_gamma_load: f32,
-    /// Estimated RoH for the current window if this event is allowed (0–1).
     pub roh_estimate_window: f32,
 }
 
-/// Trait for XR corridor guard kernels; your existing guard crates can extend this.
+/// Trait for XR corridor guard kernels.
 pub trait XrCorridorGuardKernel {
     fn corridor_id(&self) -> &'static str;
 
@@ -172,10 +146,10 @@ impl XrGazeCorridorGuardV1 {
 
     fn within_duty_and_timing(&self, s: &XrGazeCorridorStateV1) -> bool {
         s.session_duty_fraction <= self.envelope.max_duty_fraction_session
-            && s.inter_event.as_millis() as u64 >= self.envelope.min_inter_event_ms as u64
-            && s.continuous_burst.as_millis() as u64 <= self.envelope.max_continuous_burst_ms as u64
+            && s.inter_event.as_millis() as u64 >= self.envelope.min_inter_event_ms
+            && s.continuous_burst.as_millis() as u64 <= self.envelope.max_continuous_burst_ms
             && s.cooldown_since_last_burst.as_millis() as u64
-                >= self.envelope.min_cooldown_between_bursts_ms as u64
+                >= self.envelope.min_cooldown_between_bursts_ms
     }
 
     fn within_hrv_eeg_and_roh(&self, s: &XrGazeCorridorStateV1) -> bool {
@@ -203,7 +177,7 @@ impl XrCorridorGuardKernel for XrGazeCorridorGuardV1 {
 
         if !self.within_spatial(state) {
             allowed = false;
-            reasons.push("spatial_error_exceeds_corridor");
+            reasons.push("spatial_error_exceeds_corridor".to_string());
             metrics.inc_corridor_breach(
                 XR_GAZE_CORRIDOR_ID,
                 "spatial",
@@ -213,7 +187,7 @@ impl XrCorridorGuardKernel for XrGazeCorridorGuardV1 {
 
         if !self.within_energy(state) {
             allowed = false;
-            reasons.push("energy_envelope_exceeded");
+            reasons.push("energy_envelope_exceeded".to_string());
             metrics.inc_corridor_breach(
                 XR_GAZE_CORRIDOR_ID,
                 "energy",
@@ -223,7 +197,7 @@ impl XrCorridorGuardKernel for XrGazeCorridorGuardV1 {
 
         if !self.within_sbio_and_thermal(state) {
             allowed = false;
-            reasons.push("sbio_or_thermal_envelope_exceeded");
+            reasons.push("sbio_or_thermal_envelope_exceeded".to_string());
             metrics.inc_corridor_breach(
                 XR_GAZE_CORRIDOR_ID,
                 "thermal",
@@ -233,7 +207,7 @@ impl XrCorridorGuardKernel for XrGazeCorridorGuardV1 {
 
         if !self.within_duty_and_timing(state) {
             allowed = false;
-            reasons.push("duty_or_timing_violation");
+            reasons.push("duty_or_timing_violation".to_string());
             metrics.inc_corridor_breach(
                 XR_GAZE_CORRIDOR_ID,
                 "duty_timing",
@@ -243,7 +217,7 @@ impl XrCorridorGuardKernel for XrGazeCorridorGuardV1 {
 
         if !self.within_hrv_eeg_and_roh(state) {
             allowed = false;
-            reasons.push("hrv_eeg_or_roh_violation");
+            reasons.push("hrv_eeg_or_roh_violation".to_string());
             metrics.inc_corridor_breach(
                 XR_GAZE_CORRIDOR_ID,
                 "hrv_eeg_roh",
@@ -277,8 +251,6 @@ impl XrCorridorGuardKernel for XrGazeCorridorGuardV1 {
     }
 }
 
-/// Example Knowledge-Factor estimator.
-/// You can refine this to include more telemetry dimensions.
 fn compute_knowledge_factor(state: &XrGazeCorridorStateV1) -> f64 {
     let spatial_term = (1.0_f64 - (state.spatial_error_cm as f64 / 0.20).min(1.0)).max(0.0);
     let roh_term = (1.0_f64 - (state.roh_estimate_window as f64 / 0.30).min(1.0)).max(0.0);
