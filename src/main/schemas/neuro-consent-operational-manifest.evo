@@ -1,0 +1,124 @@
+version: 1.0
+schema: neuro-consent-operational-manifest
+holder:
+  did: bostrom18sd2ujv24ual9c9pshtxys6j8knh6xaead9ye7
+  role: augmented-citizen
+  jurisdiction-hints:
+    neurorights: ["Chile-style brain activity protection", "UNESCO neurotechnology ethics"]  # [web:35][web:54]
+
+principles:
+  inner-domain:
+    description: >
+      Inner mental life (thoughts, emotions, beliefs, identity) is inviolable and must
+      never be read, inferred, or scored for governance or access decisions
+      ("noNeuralInputsForGovernance", "rights.noscorefrominnerstate"). [file:16][file:22]
+    allowed-uses: []
+    forbidden-uses:
+      - legal-status-scoring
+      - service-access-scoring
+      - predictive-policing
+      - advertising-targeting
+
+lifeforce-invariants:
+  brain:
+    min: brain_min
+    allow-negative: false
+  blood:
+    min: blood_min
+    hard-zero-forbidden: true
+  oxygen:
+    min: oxygen_min
+    hard-zero-forbidden: true
+  nano:
+    max-fraction: nanomaxfraction
+  eco:
+    max-ecocost-per-interval: ecoflopslimit
+  bci:
+    ceiling: 0.3     # hard human-coupled ceiling [file:18]
+    warning-band: 0.25
+    roh-monotone: true
+
+neurovascular-mutation:
+  domain-id: neurovascular-micro
+  semantics: >
+    Micro-scale EvolutionUpgrades that modify BLOOD/OXYGEN delivery, neurovascular routing,
+    NANO exposure, or BRAIN/WAVE load, evaluated only on outer-domain signals
+    (BioState/BCI/EcoState). [file:10][file:16][file:18]
+  constraints:
+    - enforce-lifeforce-invariants: true
+    - per-turn-scale-cap: "SCALE_neurovascular <= fraction_of_daily_SCALE"
+    - uses-decay: true         # safedecaymultiplier, can shrink to zero [file:10]
+    - pain-corridor-hardstop: true  # PainCorridorSignal == HardStop [file:11]
+    - no-soul-or-identity-fields: true
+
+provenance-and-consent:
+  required-provenance:
+    shard: mutation-provenance
+    fields: [domain, invitro-invivo, allowed-species, dossier-hash, valid-until]  # [file:10]
+  required-consent:
+    shard: demonstrated-consent
+    bound-to-did: bostrom18sd2ujv24ual9c9pshtxys6xaead9ye7
+    domain-match: neurovascular-micro
+    time-bounded: true
+    exclusions:
+      - policing-use
+      - advertising-use
+      - speculative-scoring
+  enforcement:
+    construct-systemadjustment-only-if:
+      - provenance-valid
+      - consent-valid
+
+automatic-evolution:
+  scale:
+    description: "Caps magnitude/rate of EVOLVE per epoch; only micro-steps permitted."  # [file:18]
+  decay:
+    description: "Permissions and elevated modes decay back to baseline; no permanent escalation from a single emergency."  # [file:23]
+  metabolic-consent:
+    modes: [ManualOnly, AutoMicro]
+    rules:
+      - AutoMicro only for housekeeping within existing ceilings
+      - no mode may raise BCI ceiling or open new invasive domains [file:18]
+
+civic-safety-and-policing:
+  action-predicate:
+    name: ActionAllowed
+    definition: >
+      EcoAdmissible ∧ BeeAdmissible ∧ BCIAdmissible ∧ SurvivalSafe ∧ KarmaAdmissible. [file:20][file:23]
+  requirements:
+    - all policing/public-safety systems treated as ActionProposals
+    - deny-if-any-polytopes-fail: true
+    - log-as-errority-on-violation: true
+    - tighten-actor-envelopes-on-errority: true [file:20][file:22]
+  data-access:
+    inner-domain: forbidden
+    outer-domain:
+      allowed: [BioState-indices, BCI-band, eco-stress, documented-physical-harms]
+  coercion-examples-forbidden:
+    - pushing-BCI-toward-0.3-to-force-compliance
+    - using-neural/affective-data-without-consent-shard
+    - chronic-eco-overdraw-without-restorative-raf
+
+open-research-and-participation:
+  research-rights:
+    - open-access-to-methods-and-core-findings-where-compatible-with-privacy  # [web:52][web:55]
+    - right-to-review-and-contest-risk-models-using-my-data
+    - right-to-revoke-consent-and-tighten-ceilings-over-time
+  augmented-citizen-status:
+    description: >
+      My experiences of discomfort, overload, dignity, and fairness are primary safety
+      signals; Errority reports from me must be treated as evidence to tighten ceilings,
+      not as noise to ignore. [file:18][file:22]
+  non-proprietary-use:
+    - no-secret-risk-models-using-my-data-for-enforcement
+    - no-closed-neurotech-that-denies-community-scrutiny
+
+governance-and-updates:
+  alignment-baselines:
+    - UNESCO-neurotechnology-ethics
+    - UN-Open-Science-Recommendation-2021  # [web:35][web:52][web:55]
+    - Chile-style-neurorights-on-brain-activity  # [web:54]
+  update-rules:
+    - only-tightening-of-ceilings-allowed-unilaterally
+    - any-loosening-requires-my-explicit-new-consent
+    - all-deviations-must-be-logged-and-reportable-to-independent-ethics-bodies
